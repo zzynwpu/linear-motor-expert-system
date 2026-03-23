@@ -1,0 +1,53 @@
+﻿{
+  "template_id": "tpl_half_bridge_bootstrap_v1",
+  "name": "Half-bridge bootstrap transient validation",
+  "simulation_level": "circuit",
+  "applicable_motor_types": ["bldc", "servo"],
+  "applicable_task_types": ["schematic_review", "risk_analysis"],
+  "required_inputs": [
+    "bus_voltage_v",
+    "switching_frequency_khz",
+    "gate_res_ohm",
+    "bootstrap_cap_nf",
+    "driver_part",
+    "mosfet_part"
+  ],
+  "default_sweeps": [
+    {
+      "name": "bus_voltage_v",
+      "type": "corner",
+      "values": [36, 48, 60]
+    },
+    {
+      "name": "temperature_c",
+      "type": "corner",
+      "values": [25, 85, 125]
+    }
+  ],
+  "key_measurements": [
+    "v_bootstrap_min",
+    "uvlo_margin",
+    "switch_node_overshoot"
+  ],
+  "pass_criteria": [
+    {
+      "metric": "v_bootstrap_min",
+      "operator": ">=",
+      "value": 8.0,
+      "unit": "V"
+    },
+    {
+      "metric": "switch_node_overshoot",
+      "operator": "<=",
+      "value": 10.0,
+      "unit": "V"
+    }
+  ],
+  "known_limitations": [
+    "Layout parasitics are estimated unless extraction data is provided.",
+    "The template validates transient margin, not full thermal behavior."
+  ],
+  "recommended_tools": ["ngspice", "ltspice"],
+  "recommended_provider_ids": ["remote_ngspice_service", "agent_remote_sim_connector"],
+  "version": "0.1.0"
+}

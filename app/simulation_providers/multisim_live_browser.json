@@ -1,0 +1,22 @@
+﻿{
+  "provider_id": "multisim_live_browser",
+  "name": "Multisim Live",
+  "execution_target": "browser",
+  "engine": "multisim_live",
+  "homepage": "https://www.multisim.com/",
+  "strengths": [
+    "Browser-based and easy to try quickly.",
+    "Convenient for simple schematic sharing and lightweight circuit checks."
+  ],
+  "limitations": [
+    "Not ideal as the main validation platform for motor-controller power stages.",
+    "Complex drive-system and controller validation depth is limited."
+  ],
+  "suitable_for": [
+    "simple analog checks",
+    "lightweight educational circuit review"
+  ],
+  "capabilities": ["circuit", "education", "browser_ui"],
+  "recommended": false,
+  "notes": "Useful as a browser-accessible helper, but usually not sufficient as the core evidence engine for serious motor-drive reviews."
+}

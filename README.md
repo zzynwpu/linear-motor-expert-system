@@ -140,3 +140,18 @@ python -m app.cli --input data/sample_measurements.csv --output reports/sample_r
 - 本地桌面使用：网页端优先，CLI 作为批处理工具
 - 内网网页部署：FastAPI + `uvicorn`
 - 容器化部署：可继续补 `Dockerfile`
+
+
+## 新增方案文档
+
+- `docs/motor_controller_agent_prd.md`：电机控制专家智能体 PRD
+- `docs/motor_controller_agent_architecture.md`：电机控制专家智能体架构方案
+- `docs/motor_controller_knowledge_schema.md`：知识库 Schema
+- `docs/motor_controller_review_output_schema.md`：统一输出 JSON 规范
+- `docs/motor_controller_eval_template.md`：评测集与评分模板
+- `docs/motor_controller_simulation_integration_plan.md`：仿真接入详细方案
+- `docs/motor_controller_simulation_io_schema.md`：仿真 I/O Schema 与接口草案
+- `docs/motor_controller_simulation_task_templates.md`：首批仿真任务模板库
+- `docs/motor_controller_web_remote_simulation_strategy.md`：Web / 远程仿真优先策略
+- `GET /simulation-workbench`：浏览器版仿真工作台，可选择 provider 和 template 并提交仿真请求
+- `docs/remote_ngspice_service_protocol.md`：remote_ngspice_service 的 HTTP 协议草案

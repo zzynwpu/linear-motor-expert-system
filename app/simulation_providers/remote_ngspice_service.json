@@ -1,0 +1,25 @@
+﻿{
+  "provider_id": "remote_ngspice_service",
+  "name": "Remote NGSpice Service",
+  "execution_target": "remote_service",
+  "engine": "ngspice",
+  "homepage": null,
+  "strengths": [
+    "Fits backend orchestration and batch parameter sweeps.",
+    "Works well as a server-side tool adapter for an agent.",
+    "Keeps simulation execution out of user desktops."
+  ],
+  "limitations": [
+    "Requires your team to deploy and maintain the service.",
+    "Needs model/template governance to stay trustworthy."
+  ],
+  "suitable_for": [
+    "circuit risk screening",
+    "bootstrap margin checks",
+    "gate ringing sensitivity scans",
+    "sampling-front-end validation"
+  ],
+  "capabilities": ["circuit", "power_electronics", "api_ready"],
+  "recommended": true,
+  "notes": "Best default for a web-first expert agent when no local EDA tools are installed."
+}

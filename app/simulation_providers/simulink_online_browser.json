@@ -1,0 +1,24 @@
+﻿{
+  "provider_id": "simulink_online_browser",
+  "name": "Simulink Online",
+  "execution_target": "browser",
+  "engine": "simulink",
+  "homepage": "https://www.mathworks.com/products/simulink-online.html",
+  "strengths": [
+    "Accessible in a web browser.",
+    "Good fit for control and system-level modeling.",
+    "Useful when the team already has Simulink assets."
+  ],
+  "limitations": [
+    "Not the best primary tool for transistor-level switching detail.",
+    "Commercial licensing and workflow constraints apply."
+  ],
+  "suitable_for": [
+    "system-level drive modeling",
+    "controller tuning studies",
+    "motor-control scenario analysis"
+  ],
+  "capabilities": ["system", "control", "browser_ui"],
+  "recommended": true,
+  "notes": "Recommended for web-accessible system simulation if your team is already invested in MathWorks workflows."
+}
