@@ -5,16 +5,13 @@ import json
 
 import pandas as pd
 from fastapi import FastAPI, File, Form, UploadFile
-
-from .simulation_api import router as simulation_router
 from fastapi.responses import HTMLResponse
 
 from .calibration import analyze_measurements, estimate_error_budget
 from .models import SystemConfig
 
 
-app = FastAPI(title="电机")
-app.include_router(simulation_router)
+app = FastAPI(title="直线电机精度估算与校正专家系统")
 
 
 DEFAULT_TOLERANCE_INPUTS = {
@@ -164,7 +161,7 @@ def _render_parameter_table() -> str:
     """
 
 
-def _render_shell(body: str, page_title: str = "电机", hero_note: str = "优先支持基于零件公差和装配公差的误差预算；有实测数据时，也可以再切换到 CSV 标定模式。") -> HTMLResponse:
+def _render_shell(body: str, page_title: str = "直线电机精度估算与校正", hero_note: str = "优先支持基于零件公差和装配公差的误差预算；有实测数据时，也可以再切换到 CSV 标定模式。") -> HTMLResponse:
     html = f"""
     <!DOCTYPE html>
     <html lang="zh-CN">
@@ -270,7 +267,7 @@ def _render_shell(body: str, page_title: str = "电机", hero_note: str = "优�
           font-size: 14px;
           color: var(--subtle);
         }}
-        input, select, textarea {{
+        input {{
           width: 100%;
           box-sizing: border-box;
           margin-top: 6px;
@@ -354,7 +351,6 @@ def _render_shell(body: str, page_title: str = "电机", hero_note: str = "优�
           <div class="nav">
             <a href="/">返回首页</a>
             <a href="/manual">打开 User Manual</a>
-            <a href="/simulation-workbench">打开仿真工作台</a>
           </div>
         </section>
         {body}
@@ -370,9 +366,8 @@ def _render_home(body: str, defaults: dict[str, float] | None = None) -> HTMLRes
     home_body = f"""
     <section class="panel">
       <h2>操作入口</h2>
-      <p class="muted">首页专注于输入与结果。如果你需要查看参数解释、典型范围和结果判读，请打开单独的 User Manual 页面；如果你要配置 provider、template 并发起远程仿真请求，请打开仿真工作台。</p>
+      <p class="muted">首页专注于输入与结果。如果你需要查看参数解释、典型范围和结果判读，请打开单独的 User Manual 页面。</p>
       <a class="shortcut primary" href="/manual">查看 User Manual</a>
-      <a class="shortcut" href="/simulation-workbench">打开仿真工作台</a>
     </section>
     <section class="panel">
       <h2>公差输入参数表</h2>
@@ -570,269 +565,6 @@ def _render_csv_result(result, defaults: dict[str, float]) -> HTMLResponse:
     return _render_home(body, defaults)
 
 
-
-
-def _render_simulation_workbench() -> HTMLResponse:
-    workbench_body = """
-    <section class="panel">
-      <h2>仿真工作台</h2>
-      <p class="muted">这个页面面向 Web / 远程仿真流程。它会读取 provider 和 template 清单，并通过 API 创建一次仿真请求。当前返回的是结构化 stub 结果，后续接入真实远程 provider 后会自动沿用这条调用链。</p>
-      <div class="metrics">
-        <div class="metric">执行模式<strong>Web / Remote First</strong></div>
-        <div class="metric">当前用途<strong>Provider 路由验证</strong></div>
-        <div class="metric">结果类型<strong>Stub / 可替换</strong></div>
-      </div>
-    </section>
-    <section class="panel">
-      <h2>创建仿真请求</h2>
-      <form id="simulation-form">
-        <label>任务类型
-          <select id="task_type" name="task_type">
-            <option value="design_advice">design_advice</option>
-            <option value="schematic_review" selected>schematic_review</option>
-            <option value="layout_review">layout_review</option>
-            <option value="risk_analysis">risk_analysis</option>
-            <option value="test_case_generation">test_case_generation</option>
-          </select>
-        </label>
-        <label>电机类型
-          <select id="motor_type" name="motor_type">
-            <option value="bldc" selected>bldc</option>
-            <option value="stepper">stepper</option>
-            <option value="servo">servo</option>
-            <option value="linear_motor">linear_motor</option>
-          </select>
-        </label>
-        <label>仿真层级
-          <select id="simulation_level" name="simulation_level">
-            <option value="circuit" selected>circuit</option>
-            <option value="system">system</option>
-          </select>
-        </label>
-        <label>Provider
-          <select id="provider_id" name="provider_id"></select>
-        </label>
-        <label>Template
-          <select id="template_id" name="template_id"></select>
-        </label>
-        <label>工具名
-          <input id="selected_tool" name="selected_tool" value="ngspice">
-        </label>
-        <label>优先级
-          <select id="priority" name="priority">
-            <option value="low">low</option>
-            <option value="medium">medium</option>
-            <option value="high" selected>high</option>
-          </select>
-        </label>
-        <label style="grid-column: 1 / -1;">仿真目标
-          <input id="simulation_goal" name="simulation_goal" value="Validate the selected risk using the chosen remote provider.">
-        </label>
-        <label style="grid-column: 1 / -1;">项目上下文 JSON
-          <textarea id="project_context" name="project_context" rows="6">{
-  "bus_voltage_v": 48,
-  "switching_frequency_khz": 20,
-  "ambient_temp_c": 25
-}</textarea>
-        </label>
-        <label style="grid-column: 1 / -1;">参数绑定 JSON
-          <textarea id="parameter_bindings" name="parameter_bindings" rows="8">{
-  "driver_part": "DRV8353",
-  "mosfet_part": "IPB017N10N5",
-  "gate_res_ohm": 5.1,
-  "bootstrap_cap_nf": 100
-}</textarea>
-        </label>
-        <label style="grid-column: 1 / -1;">输入附件 JSON
-          <textarea id="input_artifacts" name="input_artifacts" rows="8">[
-  {
-    "artifact_type": "schematic_pdf",
-    "path": "/artifacts/project_a/schematic.pdf"
-  },
-  {
-    "artifact_type": "bom",
-    "path": "/artifacts/project_a/bom.xlsx"
-  }
-]</textarea>
-        </label>
-        <button type="submit">提交仿真请求</button>
-      </form>
-    </section>
-    <section class="panel">
-      <h2>Provider / Template 说明</h2>
-      <div class="metrics">
-        <div class="metric">
-          <div>当前 Provider</div>
-          <strong id="provider-name">加载中</strong>
-          <div id="provider-notes" class="muted"></div>
-        </div>
-        <div class="metric">
-          <div>当前 Template</div>
-          <strong id="template-name">加载中</strong>
-          <div id="template-notes" class="muted"></div>
-        </div>
-      </div>
-      <pre id="provider-template-output">等待清单加载...</pre>
-    </section>
-    <section class="panel">
-      <h2>创建结果</h2>
-      <p class="muted">这里会显示请求对象、运行对象和结果对象，方便你确认 provider 路由、模板绑定和 stub 结果结构。</p>
-      <pre id="simulation-output">等待提交请求...</pre>
-    </section>
-    <script>
-      const providerSelect = document.getElementById("provider_id");
-      const templateSelect = document.getElementById("template_id");
-      const selectedToolInput = document.getElementById("selected_tool");
-      const simulationLevelSelect = document.getElementById("simulation_level");
-      const providerTemplateOutput = document.getElementById("provider-template-output");
-      const output = document.getElementById("simulation-output");
-      const providerName = document.getElementById("provider-name");
-      const providerNotes = document.getElementById("provider-notes");
-      const templateName = document.getElementById("template-name");
-      const templateNotes = document.getElementById("template-notes");
-
-      let providers = [];
-      let templates = [];
-
-      function setOptions(select, items, valueKey, labelBuilder) {
-        select.innerHTML = "";
-        items.forEach((item) => {
-          const option = document.createElement("option");
-          option.value = item[valueKey];
-          option.textContent = labelBuilder(item);
-          select.appendChild(option);
-        });
-      }
-
-      function parseJsonField(id) {
-        const raw = document.getElementById(id).value.trim();
-        if (!raw) {
-          return id === "input_artifacts" ? [] : {};
-        }
-        return JSON.parse(raw);
-      }
-
-      async function updateProviderCard() {
-        const provider = providers.find((item) => item.provider_id === providerSelect.value);
-        if (!provider) {
-          providerName.textContent = "未选择";
-          providerNotes.textContent = "";
-          return;
-        }
-        providerName.textContent = provider.name;
-        providerNotes.textContent = `${provider.execution_target} | ${provider.engine}${provider.notes ? " | " + provider.notes : ""}`;
-        try {
-          const response = await fetch(`/api/simulations/providers/${provider.provider_id}`);
-          const detail = await response.json();
-          providerTemplateOutput.textContent = JSON.stringify({ provider: detail }, null, 2);
-        } catch (error) {
-          providerTemplateOutput.textContent = `Provider 详情加载失败: ${error}`;
-        }
-      }
-
-      async function updateTemplateCard() {
-        const template = templates.find((item) => item.template_id === templateSelect.value);
-        if (!template) {
-          templateName.textContent = "未选择";
-          templateNotes.textContent = "";
-          return;
-        }
-        templateName.textContent = template.name;
-        templateNotes.textContent = `${template.simulation_level} | 推荐 provider: ${template.recommended_provider_ids.join(", ") || "无"}`;
-        simulationLevelSelect.value = template.simulation_level;
-        if (template.recommended_tools.length > 0) {
-          selectedToolInput.value = template.recommended_tools[0];
-        }
-        if (template.recommended_provider_ids.length > 0) {
-          const recommended = template.recommended_provider_ids.find((id) => providers.some((item) => item.provider_id === id));
-          if (recommended) {
-            providerSelect.value = recommended;
-          }
-        }
-        const provider = providers.find((item) => item.provider_id === providerSelect.value);
-        providerTemplateOutput.textContent = JSON.stringify({
-          provider,
-          template
-        }, null, 2);
-        await updateProviderCard();
-      }
-
-      async function loadCatalog() {
-        output.textContent = "正在加载 provider 和 template 清单...";
-        const [providerResp, templateResp] = await Promise.all([
-          fetch("/api/simulations/providers"),
-          fetch("/api/simulations/templates")
-        ]);
-        providers = await providerResp.json();
-        templates = await templateResp.json();
-        setOptions(providerSelect, providers, "provider_id", (item) => `${item.name} (${item.execution_target})`);
-        setOptions(templateSelect, templates, "template_id", (item) => `${item.template_id} | ${item.name}`);
-        await updateTemplateCard();
-        output.textContent = "清单加载完成，可以提交请求。";
-      }
-
-      providerSelect.addEventListener("change", () => {
-        updateProviderCard().catch((error) => {
-          providerTemplateOutput.textContent = `Provider 更新失败: ${error}`;
-        });
-      });
-      templateSelect.addEventListener("change", () => {
-        updateTemplateCard().catch((error) => {
-          providerTemplateOutput.textContent = `Template 更新失败: ${error}`;
-        });
-      });
-
-      document.getElementById("simulation-form").addEventListener("submit", async (event) => {
-        event.preventDefault();
-        try {
-          const provider = providers.find((item) => item.provider_id === providerSelect.value);
-          const payload = {
-            task_type: document.getElementById("task_type").value,
-            motor_type: document.getElementById("motor_type").value,
-            simulation_level: document.getElementById("simulation_level").value,
-            simulation_goal: document.getElementById("simulation_goal").value,
-            selected_tool: document.getElementById("selected_tool").value,
-            template_id: templateSelect.value,
-            provider_id: providerSelect.value,
-            execution_target: provider ? provider.execution_target : "remote_service",
-            project_context: parseJsonField("project_context"),
-            input_artifacts: parseJsonField("input_artifacts"),
-            parameter_bindings: parseJsonField("parameter_bindings"),
-            sweeps: [],
-            measurements: [],
-            pass_criteria: [],
-            priority: document.getElementById("priority").value,
-            auto_stub_result: true
-          };
-
-          output.textContent = "正在提交仿真请求...";
-          const response = await fetch("/api/simulations/requests", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify(payload)
-          });
-
-          const data = await response.json();
-          output.textContent = JSON.stringify(data, null, 2);
-        } catch (error) {
-          output.textContent = `提交失败: ${error}`;
-        }
-      });
-
-      loadCatalog().catch((error) => {
-        output.textContent = `加载失败: ${error}`;
-      });
-    </script>
-    """
-    return _render_shell(
-        workbench_body,
-        page_title="仿真工作台",
-        hero_note="面向 Web / 远程 provider 的最小工作台。适合先验证 provider 选择、template 绑定和 stub 结果结构。",
-    )
-
-
 @app.get("/", response_class=HTMLResponse)
 async def index() -> HTMLResponse:
     return _render_home("")
@@ -841,11 +573,6 @@ async def index() -> HTMLResponse:
 @app.get("/manual", response_class=HTMLResponse)
 async def manual() -> HTMLResponse:
     return _render_manual_page()
-
-
-@app.get("/simulation-workbench", response_class=HTMLResponse)
-async def simulation_workbench() -> HTMLResponse:
-    return _render_simulation_workbench()
 
 
 @app.post("/estimate-budget", response_class=HTMLResponse)
@@ -901,13 +628,3 @@ async def analyze(
     )
     result = analyze_measurements(df, config=config)
     return _render_csv_result(result, DEFAULT_TOLERANCE_INPUTS)
-
-
-
-
-
-
-
-
-
-
