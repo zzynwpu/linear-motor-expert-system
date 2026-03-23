@@ -11,7 +11,7 @@ from .calibration import analyze_measurements, estimate_error_budget
 from .models import SystemConfig
 
 
-app = FastAPI(title="直线电机精度估算与校正专家系统")
+app = FastAPI(title="**电机精度估算与校正专家系统")
 
 
 DEFAULT_TOLERANCE_INPUTS = {
@@ -161,7 +161,7 @@ def _render_parameter_table() -> str:
     """
 
 
-def _render_shell(body: str, page_title: str = "直线电机精度估算与校正", hero_note: str = "优先支持基于零件公差和装配公差的误差预算；有实测数据时，也可以再切换到 CSV 标定模式。") -> HTMLResponse:
+def _render_shell(body: str, page_title: str = "**电机精度估算与校正", hero_note: str = "优先支持基于零件公差和装配公差的误差预算；有实测数据时，也可以再切换到 CSV 标定模式。") -> HTMLResponse:
     html = f"""
     <!DOCTYPE html>
     <html lang="zh-CN">
