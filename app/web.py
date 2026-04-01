@@ -7,21 +7,32 @@ import pandas as pd
 from fastapi import FastAPI, File, Form, Request, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse
 
-from .agent_api import router as agent_router
 from .calibration import analyze_measurements, estimate_error_budget
-from .datasheet_ingestion_api import router as datasheet_ingestion_router
-from .meeting_api import router as meeting_router
 from .models import SystemConfig
-from .selection_api import router as selection_router
-from .supplier_api import router as supplier_router
 
 
-app = FastAPI(title="Engineering Workbench")
-app.include_router(selection_router)
-app.include_router(supplier_router)
-app.include_router(datasheet_ingestion_router)
-app.include_router(agent_router)
-app.include_router(meeting_router)
+app = FastAPI(title="电机系统运动精度估算与校正智能体")
+
+
+def _try_include_router(module_name: str) -> None:
+    try:
+        module = __import__(f"app.{module_name}", fromlist=["router"])
+        router = getattr(module, "router", None)
+        if router is not None:
+            app.include_router(router)
+    except Exception:
+        # Optional workbench modules may not exist in lightweight motion-only deployments.
+        pass
+
+
+for _optional_router in [
+    "selection_api",
+    "supplier_api",
+    "datasheet_ingestion_api",
+    "agent_api",
+    "meeting_api",
+]:
+    _try_include_router(_optional_router)
 
 
 DEFAULT_TOLERANCE_INPUTS = {
@@ -453,7 +464,7 @@ def _coerce_budget_defaults(form_data: dict[str, str]) -> dict[str, float]:
 
 @app.get("/", include_in_schema=False)
 async def index() -> RedirectResponse:
-    return RedirectResponse(url="/selection-workbench", status_code=307)
+    return RedirectResponse(url="/legacy-motion-home", status_code=307)
 
 
 @app.get("/legacy-motion-home", response_class=HTMLResponse)
@@ -490,3 +501,5 @@ async def analyze(
     )
     result = analyze_measurements(df, config=config)
     return _render_csv_result(result, DEFAULT_TOLERANCE_INPUTS)
+
+
